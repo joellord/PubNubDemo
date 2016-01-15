@@ -35,13 +35,10 @@ Streamer.prototype.init = function() {
 
     self.log("Starting streamer");
 
-    if (this.stream) {
-        this.stream = null;
-    }
+    if (this.stream) this.stream.stop();
 
     var stream = t.stream("statuses/filter", {track: this.keywords});
     stream.on("tweet", function(t) {
-        console.log(t.text);
         var analysis = sentiment(t.text);
         var validListeners = [];
         validListeners = self.listeners.filter(function(e) {

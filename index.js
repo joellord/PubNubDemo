@@ -13,7 +13,7 @@ var TRENDS_URL = "http://api.whatthetrend.com/api/v2/trends.json";
 
 var streamer = new Stream();
 
-//function checkTrends() {
+function checkTrends() {
     http.get(TRENDS_URL, function (res) {
         var body = "";
         res.on('data', function(chunk) {
@@ -29,10 +29,10 @@ var streamer = new Stream();
         });
     });
 
-    //setTimeout(checkTrends, 60*1000);
-//}
+    setTimeout(checkTrends, 60*1000);
+}
 
-//checkTrends();
+checkTrends();
 
 streamer.addListener("javascript", "javascript");
 streamer.addListener("@pubnub", "pubnub");
