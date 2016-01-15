@@ -1,0 +1,17 @@
+{
+  "name": "PubNubDemo",
+  "version": "0.1.0",
+  "description": "A demo for PubNub.  Tweets being streamed to clients.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "author": "Joel Lord <me@joel-lord.com>",
+  "license": "MIT",
+  "dependencies": {
+    "pubnub": "3.7.18",
+    "sentiment": "^1.0.5",
+    "twit": "^2.1.1"
+  }
+}
