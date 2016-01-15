@@ -21,6 +21,9 @@ function checkTrends() {
         });
         res.on('end', function() {
             body = JSON.parse(body);
+            trendKeywords = [];
+            addRegularKeywords();
+
             body.trends.map(function(e) {trendKeywords.push(e.name);});
             for (var i = 0; i < Math.min(MAX_TRENDS, trendKeywords.length); i++) {
                 streamer.addListener(trendKeywords[i], "trend");
@@ -29,13 +32,16 @@ function checkTrends() {
         });
     });
 
-    setTimeout(checkTrends, 60*1000);
+    //Refresh trends every 12 hours
+    setTimeout(checkTrends, 12*60*60*1000);
 }
 
 checkTrends();
 
-streamer.addListener("javascript", "javascript");
-streamer.addListener("@pubnub", "pubnub");
+function addRegularKeywords() {
+    streamer.addListener("javascript", "javascript");
+    streamer.addListener("@pubnub", "pubnub");
+}
 
 app.get("/stats", function(req, res) {
     res.json(getStats());
