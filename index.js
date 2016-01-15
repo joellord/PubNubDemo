@@ -6,39 +6,36 @@ var app = express();
 var port = process.env.PORT || 3000;
 
 var streams = [];
-var trendKeyword = [];
+var trendKeywords = [];
+
 var MAX_TRENDS = 3;
 var TRENDS_URL = "http://api.whatthetrend.com/api/v2/trends.json";
-var DEBUG = true;
 
-http.get(TRENDS_URL, (res) => {
-    var body = "";
-    res.on('data', (chunk) => {
-        body += chunk;
+var streamer = new Stream();
+
+//function checkTrends() {
+    http.get(TRENDS_URL, function (res) {
+        var body = "";
+        res.on('data', function(chunk) {
+            body += chunk;
+        });
+        res.on('end', function() {
+            body = JSON.parse(body);
+            body.trends.map(function(e) {trendKeywords.push(e.name);});
+            for (var i = 0; i < Math.min(MAX_TRENDS, trendKeywords.length); i++) {
+                streamer.addListener(trendKeywords[i], "trend");
+            }
+            streamer.init();
+        });
     });
-    res.on('end', () => {
-        body = JSON.parse(body);
-        body.trends.map((e) => { trendKeyword.push(e.name); });
-        for (var i = 0; i < Math.min(MAX_TRENDS, trendKeyword.length); i++) {
-            streams.push(new Stream(trendKeyword[i]).init());
-        }
-    });
-});
 
-streams.push(new Stream("javascript", "javascript").init());
-streams.push(new Stream("pubnub", "pubnub").init());
+    //setTimeout(checkTrends, 60*1000);
+//}
 
-function getStats() {
-    var stats = {};
-    for (var i = 0; i < streams.length; i++) {
-        var stream = streams[i];
-        stats[stream.keyword] = stream.count;
-    }
-    if (DEBUG) console.log(stats);
-    return stats;
-}
+//checkTrends();
 
-//setInterval(getStats, 1000);
+streamer.addListener("javascript", "javascript");
+streamer.addListener("@pubnub", "pubnub");
 
 app.get("/stats", function(req, res) {
     res.json(getStats());

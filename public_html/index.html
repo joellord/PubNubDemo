@@ -50,8 +50,25 @@
 <!-- Main jumbotron for a primary marketing message or call to action -->
 <div class="jumbotron">
     <div class="container">
-        <h1>Javascript Everywhere?</h1>
-        <p>Where do the tweets about #javascript come from?</p>
+        <h1>How people fell about...</h1>
+        <p>
+            These three graphs show how people feel about some subjects (according to Tweets).
+            When you load this page, all graphs are set to 0.  Positive words like "amazing" will
+            increase the rating while negative words like "stupid" will decrease the rating.  This
+            gives you an idea of the sentimental trend over time of various keywords.
+        </p>
+        <p>
+            The sentiment analysis is done with the <a href="http://www2.imm.dtu.dk/pubdb/views/publication_details.php?id=6010" target="_blank">AFINN-111</a>
+            wordlist.
+        </p>
+        <p>
+            Our Node server receives all Tweets for a series of keywords (based on current trends) and
+            then uses PubNub to send only the necessary data to this web page.  This reduces the required
+            bandwidth and increases performance.
+        </p>
+        <p>
+            Full source code is available on <a href="http://github.com/joellord" target="_blank">Github</a>
+        </p>
     </div>
 </div>
 
@@ -76,7 +93,7 @@
     <footer>
         <p>&copy; 2016 Joel Lord - <a href="http://joel.lord.rocks">http://joel.lord.rocks</a></p>
         <p>Trend data comes from <a href="http://api.whatthetrend.com/" target="_blank">
-            <img src="http://api.whatthetrend.com/images/wtt_api_badge_120.png" border="0">
+            whatthetrend.com
         </a></p>
     </footer>
 </div> <!-- /container -->
@@ -93,25 +110,34 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.min.js"></script>
 
 <script type="text/javascript">
+//Constants
 var MAX_DATASET_LENGTH = 250;
 var DEBOUNCE_TIME = 1000;
+
 //Yay !  JS !
 window.onload = function() {
+    //Initialize PubNub with the subscriber key
     var pubnub = PUBNUB.init({
         subscribe_key: 'sub-c-67f63a44-ba40-11e5-8b32-02ee2ddab7fe'
     });
 
+    //Initialize the datasets that will be shown on the page
     var datasets = {
         javascript: ["javascript", 0],
         pubnub: ["pubnub", 0],
         trend: {}
     };
 
+    //Subscribe to the javascript channel.  This receives channel the trending data
+    //for all tweets containing the "javascript" keyword.
     pubnub.subscribe({
         channel: 'javascript',
         message: function(m){
+            //Add a new item to the dataset with an incremented value based on the
+            //sentiment score of the tweet
             var lastVal = datasets.javascript[datasets.javascript.length-1];
-            datasets.javascript.push(lastVal+m);
+            datasets.javascript.push(lastVal+ m.score);
+            //Reload the graphic
             javascriptGraph.load({
                 columns: [
                     datasets.javascript
@@ -120,11 +146,14 @@ window.onload = function() {
         }
     });
 
+    //Subscribe to the pubnub channel.  This channel receives the trending data
+    //for all tweets containing the "@pubnub" keyword.
     pubnub.subscribe({
         channel: 'pubnub',
         message: function(m){
+            //Process the messages, same as the javascript channel
             var lastVal = datasets.pubnub[datasets.pubnub.length-1];
-            datasets.pubnub.push(lastVal+m);
+            datasets.pubnub.push(lastVal+m.score);
             pubnubGraph.load({
                 columns: [
                     datasets.pubnub
@@ -133,28 +162,38 @@ window.onload = function() {
         }
     });
 
+    //Subcribe to the trend channel.  This channel will receive the information
+    //about the trending keywords.
     pubnub.subscribe({
         channel: 'trend',
         message: function(m){
+            //Woah!  PubNub is too fast, we needed to debounce this.
+            //Add the new values to the datasets but don't update the graphics for now.
             if (!datasets.trend[m.keyword]) datasets.trend[m.keyword] = [0];
             var lastVal = datasets.trend[m.keyword][datasets.trend[m.keyword].length-1];
             datasets.trend[m.keyword].push(lastVal+ m.score);
         }
     });
 
+    //Every DEBOUNCE_TIME ms, update the graphic
+    //PubNub was sending the data too fast and the browser couldn't keep up
     setInterval(function() {
+        //Reorganize the data for display
         var columns = [];
         for (var keyword in datasets.trend) {
+            //We don't want more than MAX_DATASET_LENGTH points per graph
             var tooMany = datasets.trend[keyword].length - MAX_DATASET_LENGTH;
             if (tooMany < 0) tooMany = 0;
             datasets.trend[keyword].splice(0, tooMany);
             columns.push([keyword].concat(datasets.trend[keyword]));
         }
+        //Update the graph
         trendGraph.load({
             columns: columns
         });
     }, DEBOUNCE_TIME);
 
+    //Initialize all 3 graphics
     var javascriptGraph = c3.generate({
         bindto: '#javascriptGraph',
         data: {
@@ -163,7 +202,6 @@ window.onload = function() {
             ]
         }
     });
-
     var pubnubGraph = c3.generate({
         bindto: '#pubnubGraph',
         data: {
@@ -172,7 +210,6 @@ window.onload = function() {
             ]
         }
     });
-
     var trendGraph = c3.generate({
         bindto: '#trendGraph',
         data: {
