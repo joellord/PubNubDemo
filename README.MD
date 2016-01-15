@@ -24,6 +24,8 @@ cd PubNubDemo
 npm install
 ```
 
+Edit the data.js file to add your keys for Twitter and PubNub.
+
 And finally, start the server
 
 ```javascript
